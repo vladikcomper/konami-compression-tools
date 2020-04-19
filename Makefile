@@ -29,5 +29,5 @@ bin/test: test.c $(OBJFILES)
 	$(CC) $(CFLAGS) $^ -o bin/test
 
 # Object files rules
-bin/%.o: %.c
+bin/%.o: include/%.c
 	$(CC) $(CFLAGS) $^ -o $@ -c

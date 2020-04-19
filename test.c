@@ -203,14 +203,18 @@ int runFuzzyTests() {
 
 }
 
+/* Define test execution sequence ... */
 const testExecutorData testsExecutorsSequence[] = {
 	{ .name = "Static tests", .function = runStaticTests },
 	{ .name = "Fuzzy tests", .function = runFuzzyTests }
 };
 
+/*
+ * Main loop 
+ */
 int main() {
 
-	for (int i = 0; i < sizeof(testsExecutorsSequence)/sizeof(testsExecutorsSequence[0]); ++i) {
+	for (int i = 0; i < sizeof(testsExecutorsSequence) / sizeof(testsExecutorsSequence[0]); ++i) {
 		const testExecutorData * testExecutor = &testsExecutorsSequence[i];
 
 		printf("Running %s...\n", testExecutor->name);
