@@ -97,7 +97,7 @@ lz_error lzkn1_compress(const uint8_t *inBuff, const size_t inBuffSize, uint8_t 
 		//	-- If the raw bytes queue is too large to store in a single flag (FLAG_COPY_RAW)
 		//	-- If the input buffer exhausted and should be flushed immidiately
 		if (((suggestedMode != 0xFF) && (queuedRawCopySize >= 1)) 
-				|| (queuedRawCopySize >= 0x71 || (inBuffPos + 1 == inBuffSize))) {
+				|| (queuedRawCopySize >= 0x47 || (inBuffPos + 1 == inBuffSize))) {
 
 			// If on the last cycle, correct transfer size ...
 			if ((inBuffPos + 1 == inBuffSize)) {
