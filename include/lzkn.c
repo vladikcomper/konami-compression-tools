@@ -1,4 +1,11 @@
 
+/* ================================================================================= *
+ * Konami's LZSS variant 1 (LZKN1) compressor/decompressor							 *
+ * API implementation																 *
+ *																					 *
+ * (c) 2020, Vladikcomper															 *
+ * ================================================================================= */
+
 #include <stdlib.h>		// for "malloc"
 #include <stdio.h>		// for "size_t", "printf" etc
 #include <stdint.h>		// for "uint8_t" etc.

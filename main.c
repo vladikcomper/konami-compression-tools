@@ -1,37 +1,45 @@
 
+/* ================================================================================= *
+ * Konami's LZSS variant 1 (LZKN1) compressor/decompressor							 *
+ * Command line interface implementation											 *
+ *																					 *
+ * (c) 2020, Vladikcomper															 *
+ * ================================================================================= */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
+/* Include compress/decompress functions */
 #include "lzkn.h"
 
 /* Helper macros */
 #define FAIL_IF_NONZERO(expr)	if ((expr) != 0) return -1;
 #define FAIL_IF_ZERO(expr)		if (!(expr)) return -1;
 
-/*
- * USAGE EXAMPLE:
- *	lzkn [-d|-c] input_file [output_file]
- *
- * 	-d 	Indicates decompression mode
- *	-c	Indicates compression mode
- *
- */
+/* Helper types */
+typedef enum { COMPRESS, DECOMPRESS, RECOMPRESS } operationMode;
 
+/* Program usage */
 const char * usageMessageStr = 
-	"Konami's LZ77 variant (LZKN1) compressor/decompressor\n"
+	"Konami's LZSS variant 1 (LZKN1) compressor/decompressor v.1.5\n"
 	"(c) 2020, Vladikcomper\n"
 	"\n"
 	"USAGE:\n"
-	"	lzkn [-d|-c] input_file [output_file]\n"
+	"	lzkn [-c|-d|-r] input_path [output_path]\n"
 	"	\n"
-	"	[-d|-c] selects operation mode: either decompression (-d) or \n"
-	"	compression (-c). If ommited the compression mode is assumed.\n"
+	"	The first optional argument, if present, selects operation mode:\n"
+	"		-c	Compress <input_path>;\n"
+	"		-d	Decompress <input_path>;\n"
+	"		-r	Recompress <input_path> (decompress and compress again).\n\n"
+	"	If flag is ommited, compression mode is assumed."
 	"	\n"
-	"	If [output_file] is not specified, it's constructed as follows:\n"
-	"		- <input_file> + \".lzkn1\" extension in compression mode;\n"
-	"		- <input_file> + \".unc\" extension in decompression mode.\n";
+	"	If [output_path] is not specified, it's set as follows:\n"
+	"		= <input_path> + \".lzkn1\" extension if in compression mode;\n"
+	"		= <input_path> + \".unc\" extension if in decompression mode;\n"
+	"		= <input-path> (w/o changes) in recompression mode.\n";
 
 /*
  * Prints program usage
@@ -47,7 +55,7 @@ char * concatStrings(const char * str1, const char * str2) {
 	const size_t str1_len = strlen(str1);
 	const size_t str2_len = strlen(str2);
 
-	char * result = malloc(str1_len + str2_len + 1);
+	char * result = malloc(str1_len + str2_len + 1);	// WARNING! Causes a tiny memory leak!
 	strncpy(result, str1, str1_len);
 	strncpy(result + str1_len, str2, str2_len);
 
@@ -97,10 +105,12 @@ int writeFile(const char * path, uint8_t * buffer, size_t bufferSize) {
 	return 0;
 }
 
-int main(int argc, char ** argv) {
-	
-	enum { COMPRESSION, DECOMPRESSION } mode = COMPRESSION;
+/*
+ * Parses command line arguments
+ */
+int parseAgrs(int argc, char ** argv, operationMode * mode, char ** inputPathPtr, char ** outputPathPtr) {
 
+	// Handle "too few" arguments error
 	if (argc < 2) {
 		printUsage();
 		fprintf(stderr, "ERROR: Too few arguments.\n");
@@ -108,33 +118,78 @@ int main(int argc, char ** argv) {
 		return 1;
 	}
 
-	// Check if the first argument specifies mode (-d|-c)
-	const char * modeFlag;
-	char * inputPath = argv[1];
-	char * outputPath = (argc > 2) ? argv[2] : NULL;
+	// Handle "too many" arguments warning
+	else if (argc > 4) {
+		fprintf(stderr, "WARNING: Unexpected arguments found.\n");
+	}
 
+	// Check if the first argument specifies a operation mode flag ...
 	if (argv[1][0] == '-') {
-		modeFlag = argv[1];
-		inputPath = argv[2];
-		outputPath = (argc > 3) ? argv[3] : NULL;
+		const char * modeFlag = argv[1];
+		int modeFlagSet = 0;
+
+		*inputPathPtr = argv[2];						// the second argument specifies <input_path> then
+		*outputPathPtr = (argc > 3) ? argv[3] : NULL;	// the third argument (if present) specifies <output_path>
 
 		if (modeFlag[1] == 'c') {
-			mode = COMPRESSION;
+			*mode = COMPRESS;
+			modeFlagSet = 1;
 		}
 		else if (modeFlag[1] == 'd') {
-			mode = DECOMPRESSION;
+			*mode = DECOMPRESS;
+			modeFlagSet = 1;
 		}
-		else {
-			fprintf(stderr, "ERROR: Unknown mode flag \"%s\". Only -c and -d flags are supported.\n", modeFlag);
+		else if (modeFlag[1] == 'r') {
+			*mode = RECOMPRESS;
+			modeFlagSet = 1;
+		}
+		
+		if (!modeFlagSet || modeFlag[2] != 0x00) {
+			fprintf(stderr, "ERROR: Unknown mode flag \"%s\". Only -c, -d and -r flags are supported.\n", modeFlag);
 			return 2;
 		}
 	}
 
-	// If the output path is not specified, re-use the input path and append an extension to it
-	if (!outputPath) {
-		const char * outputPathExtension = (mode == COMPRESSION) ? ".lzkn1" : ".unc";
+	// If the first argument is not an operation mode flag ...
+	else {
+		*inputPathPtr = argv[1];						// the fist argument specifies <input_path> then
+		*outputPathPtr = (argc > 2) ? argv[2] : NULL;	// the third argument (if present) specifies <output_path>
+	}
 
-		outputPath = concatStrings(inputPath, outputPathExtension);
+	return 0;
+
+}
+
+/*
+ * The main function
+ */
+int main(int argc, char ** argv) {
+		
+	// Parse input arguments
+	char * inputPath;
+	char * outputPath;
+	operationMode mode = COMPRESS;
+
+	int argParseResult = parseAgrs(argc, argv, &mode, &inputPath, &outputPath);
+
+	if (argParseResult != 0) {
+		return argParseResult;
+	}
+
+	// If the output path is not specified ...
+	if (!outputPath) {
+
+		// If RECOMPRESSION mode, assume input and output are the same
+		if (mode == RECOMPRESS) {
+			outputPath = inputPath;
+		}
+
+		// Otherwise, output file name is the same as input, but with the extension appended
+		else {
+			const char * outputPathExtension = (mode == COMPRESS) ? ".lzkn1" : ".unc";
+
+			outputPath = concatStrings(inputPath, outputPathExtension);
+		}
 	}
 
 	// Initialize I/O buffers ...
@@ -155,9 +210,30 @@ int main(int argc, char ** argv) {
 		}
 	}
 
-	// If mode is COMPRESSION, compress input buffer
-	if (mode == COMPRESSION) {
+	// If mode is DECOMPRESS or RECOMPRESS, decompress to the output buffer
+	if (mode == DECOMPRESS || mode == RECOMPRESS) {
+		lz_error decompressionResult =
+			lzkn1_decompress(inBuff, inBuffSize, &outBuff, &outBuffSize);
+
+		if (decompressionResult != 0) {
+			fprintf(stderr, "Decompression failed with return code %X\n", decompressionResult);
+
+			free(inBuff);
+			free(outBuff);
+			return decompressionResult;
+		}
+	}
+
+	// If mode is COMPRESS or RECOMPRESS, compress to the output buffer
+	if (mode == COMPRESS || mode == RECOMPRESS) {
 		size_t compressedSize;
+
+		if (mode == RECOMPRESS) {
+			free(inBuff);
+
+			inBuff = outBuff;
+			inBuffSize = outBuffSize;
+		}
 
 		outBuffSize = 0x10000;
 		outBuff = malloc(outBuffSize);
@@ -178,29 +254,18 @@ int main(int argc, char ** argv) {
 
 	}
 
-	// If mode is DECOMPRESSION, decompress output buffer
-	else if (mode == DECOMPRESSION) {
-		lz_error decompressionResult =
-			lzkn1_decompress(inBuff, inBuffSize, &outBuff, &outBuffSize);
 
-		if (decompressionResult != 0) {
-			fprintf(stderr, "Decompression failed with return code %X\n", decompressionResult);
+	// Write down the resulting buffer to the output file
+	{
+		int outputWriteResult = writeFile(outputPath, outBuff, outBuffSize);
+		
+		if (outputWriteResult != 0) {
+			fprintf(stderr, "ERROR: Unable to write to output file \"%s\" (code %d)\n", outputPath, outputWriteResult);
 
 			free(inBuff);
 			free(outBuff);
-			return decompressionResult;
+			return outputWriteResult;
 		}
-	}
-
-	// 
-	int outputWriteResult = writeFile(outputPath, outBuff, outBuffSize);
-	
-	if (outputWriteResult != 0) {
-		fprintf(stderr, "ERROR: Unable to write to output file \"%s\" (code %d)\n", outputPath, outputWriteResult);
-
-		free(inBuff);
-		free(outBuff);
-		return outputWriteResult;
 	}
 
 	free(inBuff);
