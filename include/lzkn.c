@@ -32,7 +32,7 @@ lz_error lzkn1_compress(const uint8_t *inBuff, const size_t inBuffSize, uint8_t 
 	int32_t inBuffLastCopyPos = 0;			// position of the last copied byte to the uncompressed stream
 	int32_t outBuffPos = 0;					// output buffer position
 
-	//
+	// Define basic helper macros
 	#define MIN(a,b)	((a) < (b) ? (a) : (b))
 	#define MAX(a,b)	((a) > (b) ? (a) : (b))
 

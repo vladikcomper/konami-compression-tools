@@ -39,7 +39,7 @@ const char * usageMessageStr =
 	"	If [output_path] is not specified, it's set as follows:\n"
 	"		= <input_path> + \".lzkn1\" extension if in compression mode;\n"
 	"		= <input_path> + \".unc\" extension if in decompression mode;\n"
-	"		= <input-path> (w/o changes) in recompression mode.\n";
+	"		= <input_path> (w/o changes) in recompression mode.\n";
 
 /*
  * Prints program usage
