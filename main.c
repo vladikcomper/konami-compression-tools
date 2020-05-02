@@ -24,7 +24,7 @@ typedef enum { COMPRESS, DECOMPRESS, RECOMPRESS } operationMode;
 
 /* Program usage */
 const char * usageMessageStr = 
-	"Konami's LZSS variant 1 (LZKN1) compressor/decompressor v.1.5\n"
+	"Konami's LZSS variant 1 (LZKN1) compressor/decompressor v.1.5.1\n"
 	"(c) 2020, Vladikcomper\n"
 	"\n"
 	"USAGE:\n"
@@ -56,8 +56,8 @@ char * concatStrings(const char * str1, const char * str2) {
 	const size_t str2_len = strlen(str2);
 
 	char * result = malloc(str1_len + str2_len + 1);	// WARNING! Causes a tiny memory leak!
-	strncpy(result, str1, str1_len);
-	strncpy(result + str1_len, str2, str2_len);
+	strncpy(result, str1, str1_len + 1);
+	strncpy(result + str1_len, str2, str2_len + 1);
 
 	return result;
 }
