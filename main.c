@@ -123,7 +123,7 @@ int parseAgrs(int argc, char ** argv, operationMode * mode, char ** inputPathPtr
 		fprintf(stderr, "WARNING: Unexpected arguments found.\n");
 	}
 
-	// Check if the first argument specifies a operation mode flag ...
+	// Check if the first argument specifies an operation mode flag ...
 	if (argv[1][0] == '-') {
 		const char * modeFlag = argv[1];
 		int modeFlagSet = 0;
