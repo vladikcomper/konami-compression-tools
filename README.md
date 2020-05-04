@@ -78,7 +78,7 @@ This repository includes:
 * `test.c`, an automated testing suite used through the development to ensure implementation performance and stability.
 
 
-## Building from the source code
+## Building from the source code and installation
 
 The implementation is written in pure C, doesn't have any dependencies other than the standard C library and includes automatic tests.
 
@@ -96,10 +96,16 @@ If you wish to additionally test the compression integrity and performance on yo
 
 These tests were introduced solely for debugging purposes during the development; they should always succeed. If you see any failures during their execution, please report an issue immediately.
 
+To install compression tools on your system, run the following command as root (or use `sudo` on Debian-based systems):
+
+	make install
+
+The binaries will be copied to the `/usr/local/bin` directory by default (you may override this by passing your own `PREFIX` to `make install`, please consult the GNU `make` manual for more information).
+
 
 ## How to use
 
-This repository builds `lzkn`, a command-line tool that accepts the following arguments:
+This repository builds and installs `lzkn`, a command-line tool that accepts the following arguments:
 
 	lzkn [-c|-d|-r] input_path [output_path]
 
